@@ -7,9 +7,8 @@ import gzip
 import os
 from sqlalchemy import create_engine
 
-# Constants
 BASE_URL = "https://dumps.wikimedia.org/other/pageviews/2024/10/"
-FILENAME = "pageviews-2024-10-10-16.gz"  # Adjust for desired hour/date
+FILENAME = "pageviews-2024-10-10-16.gz"
 COMPANIES = ["Amazon", "Apple", "Facebook", "Google", "Microsoft"]
 DATABASE_URI = 'postgresql+psycopg2://airflow:airflow@postgres/airflow'
 
@@ -17,7 +16,7 @@ def download_file(url, dest):
     response = requests.get(url)
     with open(dest, 'wb') as f:
         f.write(response.content)
-    return dest  # Return the path to the downloaded file for XCom
+    return dest
 
 def extract_and_save_pageviews(filepath):
     sql_commands = []
@@ -49,13 +48,13 @@ with DAG('wikipedia_pageviews', default_args=default_args, schedule_interval='@d
 
     extract_task = BashOperator(
         task_id='extract_pageviews',
-        bash_command='gzip -d /tmp/{{ task_instance.xcom_pull(task_ids="download_pageviews") }}',  # Pulling the correct file path
+        bash_command='gzip -d /tmp/{{ task_instance.xcom_pull(task_ids="download_pageviews") }}', 
     )
 
     process_task = PythonOperator(
         task_id='process_pageviews',
         python_callable=extract_and_save_pageviews,
-        op_kwargs={'filepath': '/tmp/' + FILENAME.replace('.gz', '')},  # Updated to use the decompressed filename
+        op_kwargs={'filepath': '/tmp/' + FILENAME.replace('.gz', '')},
         do_xcom_push=True,
     )
 
